@@ -16,6 +16,7 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
     }
 
     private fun mapFiles(
+      isMusic: Boolean,
       collection: Uri,
       externalContentUri: Uri,
       idColumn: String,
@@ -25,12 +26,13 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
       mimeColumn: String,
       titleColumn: String,
       albumColumn: String,
-      artistColumn: String
+      artistColumn: String,
+      albumId: String
     ): Array<WritableMap> {
 
       val files = mutableListOf<WritableMap>()
 
-      val projection = arrayOf(
+      var projection = arrayOf(
         idColumn,
         nameColumn,
         durationColumn,
@@ -40,6 +42,20 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
         albumColumn,
         artistColumn
       )
+
+      if (isMusic) {
+        projection = arrayOf(
+          idColumn,
+          nameColumn,
+          durationColumn,
+          sizeColumn,
+          mimeColumn,
+          titleColumn,
+          albumColumn,
+          artistColumn,
+          albumId
+        )
+      }
 
       val query = reactApplicationContext.contentResolver.query(
         collection,
@@ -57,6 +73,10 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
         val titleColumn = cursor.getColumnIndexOrThrow(titleColumn)
         val albumColumn = cursor.getColumnIndexOrThrow(albumColumn)
         val artistColumn = cursor.getColumnIndexOrThrow(artistColumn)
+        var albumIdColumn = -1
+        if (isMusic) {
+          albumIdColumn = cursor.getColumnIndexOrThrow(albumId)
+        }
 
         while (cursor.moveToNext()) {
 
@@ -71,8 +91,15 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
           item.putString("title", cursor.getString(titleColumn))
           item.putString("album", cursor.getString(albumColumn))
           item.putString("artist", cursor.getString(artistColumn))
-
           item.putString("contentUri", "content://media" + externalContentUri.path + "/" + id)
+          if (isMusic) {
+            val albumID = cursor.getInt(albumIdColumn).toString()
+            item.putString("albumId", albumID)
+            item.putString("albumArt" , "content://media/external/audio/albumart/" + albumID)
+          } else {
+            item.putString("albumId", "")
+            item.putString("albumArt" , "")
+          }
 
           files += item
         }
@@ -93,6 +120,7 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
       val mediaList = Arguments.createArray()
 
       mapFiles(
+        true,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
           MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
@@ -106,12 +134,14 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
         MediaStore.Audio.Media.MIME_TYPE,
         MediaStore.Audio.Media.TITLE,
         MediaStore.Audio.Media.ALBUM,
-        MediaStore.Audio.Media.ARTIST
+        MediaStore.Audio.Media.ARTIST,
+        MediaStore.Audio.Media.ALBUM_ID
       ).forEach { file ->
         mediaList.pushMap(file)
       }
 
       mapFiles(
+        false,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
           MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
@@ -125,7 +155,8 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
         MediaStore.Video.Media.MIME_TYPE,
         MediaStore.Video.Media.TITLE,
         MediaStore.Video.Media.ALBUM,
-        MediaStore.Video.Media.ARTIST
+        MediaStore.Video.Media.ARTIST,
+        "" // Video media do not have album id, just pass an empty string
       ).forEach { file ->
         mediaList.pushMap(file)
       }
