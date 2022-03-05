@@ -5,49 +5,46 @@ import Mediastore from 'react-native-mediastore';
 import Video from 'react-native-video';
 
 export default function App() {
-
-  const [ source, setSource ] = React.useState<any>(null)
+  const [source, setSource] = React.useState<any>(null);
 
   React.useEffect(() => {
-
     (async () => {
       try {
-        const status = await Permissions.request(Permissions.PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE)
-        if(status !== Permissions.RESULTS.GRANTED) {
-          console.log("Permission fail", status)
-          return
+        const status = await Permissions.request(
+          Permissions.PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE
+        );
+        if (status !== Permissions.RESULTS.GRANTED) {
+          console.log('Permission fail', status);
+          return;
         }
 
-        const files = await Mediastore.readAudioVideoExternalMedias()
-        console.log(files)
+        const files = await Mediastore.readAudioVideoExternalMedias();
+        console.log(files);
 
-        if(files.length > 0) {
+        if (files.length > 0) {
           setSource({
-            uri: files[0].contentUri
-          })
+            uri: files[0].contentUri,
+          });
         }
+      } catch (err) {
+        console.log(err);
       }
-      catch (err) {
-        console.log(err)
-      }
-    })()
+    })();
   }, []);
 
-  console.log(source)
+  console.log(source);
 
   return (
     <View style={styles.container}>
       <Text>Hello, MediaStore!</Text>
-      { (source !== null) && <Video
-        source={source}
-        style={{
-          width: 400,
-          height: 200,
-          backgroundColor: "red"
-        }}
-        onLoad={(data: any) => console.log("onLoad", data)}
-        onError={(error: any) => console.log("onError", error)}
-      /> }
+      {source !== null && (
+        <Video
+          source={source}
+          style={styles.video}
+          onLoad={(data: any) => console.log('onLoad', data)}
+          onError={(error: any) => console.log('onError', error)}
+        />
+      )}
     </View>
   );
 }
@@ -62,5 +59,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     marginVertical: 20,
+  },
+  video: {
+    width: 400,
+    height: 200,
+    backgroundColor: 'red',
   },
 });
