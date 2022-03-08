@@ -1,13 +1,9 @@
 package com.reactnativemediastore
 
-import android.content.ContentResolver
-import android.content.ContentUris
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.provider.MediaStore.Images.Media.query
 import com.facebook.react.bridge.*
-import java.util.concurrent.TimeUnit
 
 class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -95,7 +91,7 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
           if (isMusic) {
             val albumID = cursor.getInt(albumIdColumn).toString()
             item.putString("albumId", albumID)
-            item.putString("albumArt" , "content://media/external/audio/albumart/" + albumID)
+            item.putString("albumArt" , "content://media/external/audio/albumart/$albumID")
           } else {
             item.putString("albumId", "")
             item.putString("albumArt" , "")
@@ -160,6 +156,64 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
       ).forEach { file ->
         mediaList.pushMap(file)
       }
+
+      promise.resolve(mediaList)
+    }
+
+    private  fun mapGenres(
+      collection: Uri,
+      externalContentUri: Uri,
+      genreId: String,
+      genreName: String
+    ): Array<WritableMap> {
+      val files = mutableListOf<WritableMap>()
+
+      var projection = arrayOf(
+        genreId,
+        genreName
+      )
+
+      val query = reactApplicationContext.contentResolver.query(
+        collection,
+        projection,
+        null,
+        null,
+        null
+      )
+      query?.use { cursor ->
+        val idColumn = cursor.getColumnIndexOrThrow(genreId)
+        val nameColumn = cursor.getColumnIndexOrThrow(genreName)
+
+        while (cursor.moveToNext()) {
+
+          val item = Arguments.createMap()
+          val id = cursor.getLong(idColumn)
+
+          item.putInt("id", id.toInt())
+          item.putString("name", cursor.getString(nameColumn))
+          item.putString("contentUri", "content://media" + externalContentUri.path + "/" + id)
+
+          files += item
+        }
+      }
+
+      return files.toTypedArray()
+    }
+
+    @ReactMethod
+    fun readGenreMedias(promise: Promise) {
+      val mediaList = Arguments.createArray()
+
+      mapGenres(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          MediaStore.Audio.Genres.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+          MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI
+        },
+        MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
+        MediaStore.Audio.Genres._ID,
+        MediaStore.Audio.Genres.NAME
+      ).forEach { file -> mediaList.pushMap(file) }
 
       promise.resolve(mediaList)
     }

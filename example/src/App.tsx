@@ -8,7 +8,7 @@ export default function App() {
   const [source, setSource] = React.useState<any>(null);
 
   React.useEffect(() => {
-    (async () => {
+    const getAudioMedias = async () => {
       try {
         const status = await Permissions.request(
           Permissions.PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE
@@ -29,7 +29,21 @@ export default function App() {
       } catch (err) {
         console.log(err);
       }
-    })();
+    };
+
+    const getGenres = () => {
+      Mediastore.readGenreMedias()
+        .then((response) => {
+          console.log('All returned genres: ');
+          console.log(response);
+        })
+        .catch((error) => {
+          console.log('Error when getting genres: ');
+          console.log(error);
+        });
+    };
+
+    getGenres();
   }, []);
 
   console.log(source);
