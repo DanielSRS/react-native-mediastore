@@ -43,7 +43,21 @@ export default function App() {
         });
     };
 
+    const getGenreMembers = () => {
+      Mediastore.readGenreMembers(1)
+        .then((response) => {
+          console.log('All returned genre members: ');
+          console.log(response);
+        })
+        .catch((error) => {
+          console.log('Error when getting genre members: ');
+          console.log(error);
+        });
+    };
+
+    getAudioMedias();
     getGenres();
+    getGenreMembers();
   }, []);
 
   console.log(source);

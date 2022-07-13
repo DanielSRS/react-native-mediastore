@@ -160,6 +160,62 @@ class MediastoreModule(reactContext: ReactApplicationContext) : ReactContextBase
       promise.resolve(mediaList)
     }
 
+    private fun mapGenreMembers(
+      collection: Uri,
+      externalContentUri: Uri,
+      memberID: String,
+      title: String
+    ): Array<WritableMap> {
+      val files = mutableListOf<WritableMap>()
+
+      var projection = arrayOf(
+        memberID,
+        title
+      )
+
+      val query = reactApplicationContext.contentResolver.query(
+        collection,
+        projection,
+        null,
+        null,
+        null
+      )
+      query?.use { cursor ->
+        val idColumn = cursor.getColumnIndexOrThrow(memberID)
+        val titleColumn = cursor.getColumnIndexOrThrow(title)
+
+        while (cursor.moveToNext()) {
+
+          val item = Arguments.createMap()
+          val id = cursor.getLong(idColumn)
+
+          item.putInt("audioID", id.toInt())
+          item.putString("title", cursor.getString(titleColumn))
+
+
+          files += item
+        }
+      }
+
+      return files.toTypedArray()
+    }
+
+    @ReactMethod
+    fun readGenreMembers(genreID: Int, promise: Promise) {
+      val mediaList = Arguments.createArray()
+
+      val id = genreID.toLong()
+
+      mapGenreMembers(
+        MediaStore.Audio.Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, id),
+        MediaStore.Audio.Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, id),
+        MediaStore.Audio.Genres.Members._ID,
+        MediaStore.Audio.Genres.Members.DURATION
+      ).forEach { file -> mediaList.pushMap(file) }
+
+      promise.resolve(mediaList)
+    }
+
     private  fun mapGenres(
       collection: Uri,
       externalContentUri: Uri,

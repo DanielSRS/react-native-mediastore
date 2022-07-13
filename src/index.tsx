@@ -20,9 +20,27 @@ type Genre = {
   contentUri: string;
 };
 
+type GenreMembers = {
+  memberId: number;
+  albumId: string;
+  artistId: string;
+  audioId: string;
+  displayName: string;
+  genreId: string;
+  title: string;
+  track: string;
+  relativePath: string;
+  contentUri: string;
+  album: string;
+  artist: string;
+  composer: string;
+  contentDirectory: string;
+};
+
 type MediastoreType = {
   readAudioVideoExternalMedias(): Promise<Array<MediastoreFileType>>;
   readGenreMedias(): Promise<Genre[]>;
+  readGenreMembers: (genreId: number) => Promise<GenreMembers[]>;
 };
 
 const { Mediastore } = NativeModules;
